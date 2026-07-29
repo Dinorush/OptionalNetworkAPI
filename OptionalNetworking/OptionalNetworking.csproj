@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(MSBuildThisFileDirectory)/Dependencies.props" />
+  <PropertyGroup>
+    <TargetFramework>net6</TargetFramework>
+    <Nullable>enable</Nullable>
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<AssemblyName>OptionalNetworkAPI</AssemblyName>
+  </PropertyGroup>
+
+</Project>
