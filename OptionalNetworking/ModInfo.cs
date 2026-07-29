@@ -10,6 +10,7 @@ namespace OptionalNetworking
     {
         /// <summary> The name this mod was registered with.</summary>
         public readonly string Name;
+        internal readonly ulong Hash;
         /// <summary> The unique mod mask this mod was given. Used with PlayerInfo to check if a player has this mod.</summary>
         public readonly long Mask;
         /// <summary> Whether the master has this mod installed.</summary>
@@ -21,9 +22,10 @@ namespace OptionalNetworking
         /// <summary> A collection of all players, including bots, that have the mod.</summary>
         public IReadOnlyCollection<SNet_Player> Players => _players.Values;
 
-        private ModInfo(string name, long mask)
+        private ModInfo(string name, ulong hash, long mask)
         {
             Name = name;
+            Hash = hash;
             Mask = mask;
         }
 
@@ -170,6 +172,6 @@ namespace OptionalNetworking
             return mask;
         }
 
-        internal static ModInfo CreateModInfo(string name) => new(name, GetNextMask());
+        internal static ModInfo CreateModInfo(string name, ulong hash) => new(name, hash, GetNextMask());
     }
 }

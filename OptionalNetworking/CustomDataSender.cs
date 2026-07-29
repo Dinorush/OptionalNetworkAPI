@@ -47,24 +47,18 @@ namespace OptionalNetworking
             }
         }
 
-        private const string EventPrefix = $"{EntryPoint.MODNAME}Data";
+        private const string EventPrefix = $"OptionalData";
         private static readonly byte[] s_packetBuffer = new byte[Marshal.SizeOf<SNetStructs.pPlayer>() + Marshal.SizeOf<T>()];
         private readonly ModInfo _parent;
         private readonly string _eventName;
         private readonly Func<SNet_Player, T>? _defaultProvider;
-        /// <summary> Executed when receiving data for a player.</summary>
-        protected private Action<SNet_Player, T> ReceiveEvent;
+        private protected Action<SNet_Player, T> ReceiveEvent;
         private readonly Dictionary<ulong, SNet_Player> _sentBots = new();
         private readonly SenderMode _mode;
 
-        private CustomDataSender(ModInfo parent, string id, Action<SNet_Player, T> receiveEvent, Func<SNet_Player, T>? defaultProvider, SenderMode senderMode)
+        private CustomDataSender(ModInfo parent, string id, Action<SNet_Player, T> receiveEvent, Func<SNet_Player, T>? defaultProvider, SenderMode senderMode) : this(parent, id, defaultProvider, senderMode)
         {
-            _parent = parent;
-            _eventName = EventPrefix + id;
-            _defaultProvider = defaultProvider;
             ReceiveEvent = receiveEvent;
-            _mode = senderMode;
-            NetworkAPI.RegisterFreeSizedEvent(_eventName, ReceiveDataRaw);
         }
 
         private protected CustomDataSender(ModInfo parent, string id, Func<SNet_Player, T>? defaultProvider, SenderMode senderMode)
@@ -79,15 +73,7 @@ namespace OptionalNetworking
 
         internal static CustomDataSender<T> CreateDataSender(ModInfo parent, int index, Action<SNet_Player, T> receiveEvent, Func<SNet_Player, T>? defaultProvider, SenderMode senderMode)
         {
-            var mask = parent.Mask;
-            int pos = (mask & 1) != 0 ? 64 : 0;
-            mask &= ~1;
-            while ((mask & 1) == 0)
-            {
-                mask >>= 1;
-                pos++;
-            }
-            return new CustomDataSender<T>(parent, $"{pos}_{index}", receiveEvent, defaultProvider, senderMode);
+            return new CustomDataSender<T>(parent, $"{parent.Hash:x}_{index}", receiveEvent, defaultProvider, senderMode);
         }
 
         /// <summary>

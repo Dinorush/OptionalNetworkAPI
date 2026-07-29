@@ -31,15 +31,7 @@ namespace OptionalNetworking
 
         internal static CustomDataManager<T> CreateDataManager(ModInfo parent, int index, Func<SNet_Player, T> defaultProvider)
         {
-            var mask = parent.Mask;
-            int pos = (mask & 1) != 0 ? 64 : 0;
-            mask &= ~1;
-            while ((mask & 1) == 0)
-            {
-                mask >>= 1;
-                pos++;
-            }
-            return new CustomDataManager<T>(parent, $"{pos}_{index}", defaultProvider);
+            return new CustomDataManager<T>(parent, $"{parent.Hash:x}_{index}", defaultProvider);
         }
 
         /// <summary> Gets the data associated with the given player.</summary>

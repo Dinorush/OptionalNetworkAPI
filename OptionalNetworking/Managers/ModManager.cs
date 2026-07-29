@@ -1,4 +1,5 @@
-﻿using Player;
+﻿using OptionalNetworking.Hashing;
+using Player;
 using SNetwork;
 using System;
 using System.Collections.Generic;
@@ -11,10 +12,12 @@ namespace OptionalNetworking.Managers
         private readonly static Dictionary<ulong, PlayerInfo> _bots = new();
         private readonly static Dictionary<ulong, PlayerInfo> _players = new();
         private readonly static Dictionary<string, ModInfo> _modInfos = new();
-        private static (long mask1, long mask2) _localMask = (0, 0);
+        private readonly static Dictionary<ulong, ModInfo> _hashToMod = new();
+        private static (long mask1, long mask2) _localMask = (0, 1);
 
         public static PlayerInfo? MasterInfo { get; private set; }
         public static PlayerInfo? LocalInfo { get; private set; }
+        public static IReadOnlyCollection<ModInfo> Mods => _modInfos.Values;
         public static bool HasMod(string name) => _modInfos.ContainsKey(name);
         public static bool HasMod(SNet_Player player, string name)
         {
@@ -24,22 +27,43 @@ namespace OptionalNetworking.Managers
         }
         public static bool TryGetModInfo(string name, [MaybeNullWhen(false)] out ModInfo modInfo) => _modInfos.TryGetValue(name, out modInfo);
         public static bool TryGetPlayerInfo(SNet_Player player, [MaybeNullWhen(false)] out PlayerInfo playerInfo) => _players.TryGetValue(player.Lookup, out playerInfo);
-        public static (long mask1, long mask2) LocalModMask => _localMask;
+
+        private static void CombineMask(ref (long mask1, long mask2) mask, long maskToAdd)
+        {
+            if ((maskToAdd & 1) == 0)
+                mask.mask1 |= maskToAdd;
+            else
+                mask.mask2 |= maskToAdd;
+        }
+
+        internal static IReadOnlyCollection<ulong> ModHashes => _hashToMod.Keys;
+        internal static (long mask1, long mask2) HashesToMask(ulong[] hashes)
+        {
+            (long, long) mask = (0, 1);
+            foreach (ulong hash in hashes)
+            {
+                if (_hashToMod.TryGetValue(hash, out var modInfo))
+                    CombineMask(ref mask, modInfo.Mask);
+            }
+            return mask;
+        }
 
         internal static ModInfo AddMod(string name)
         {
             if (_modInfos.ContainsKey(name))
                 throw new ArgumentException($"Cannot register duplicate mod name {name}.");
 
-            ModInfo info = ModInfo.CreateModInfo(name);
+            ulong hash = MurmurHash2.Hash(name);
+            if (_hashToMod.TryGetValue(hash, out var existingInfo))
+                throw new ArgumentException($"Hash for mod name {name} collides with {existingInfo.Name}, can't register!");
+
+            ModInfo info = ModInfo.CreateModInfo(name, hash);
             if (info.Mask == 0)
                 throw new IndexOutOfRangeException($"Out of internal space (126 mods registered), unable to register mod {name}.");
 
             _modInfos.Add(name, info);
-            if ((info.Mask & 1) != 0)
-                _localMask.mask2 |= info.Mask;
-            else
-                _localMask.mask1 |= info.Mask;
+            _hashToMod.Add(hash, info);
+            CombineMask(ref _localMask, info.Mask);
             return info;
         }
 

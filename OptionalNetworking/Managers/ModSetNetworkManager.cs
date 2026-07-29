@@ -1,5 +1,7 @@
 ﻿using GTFO.API;
 using SNetwork;
+using System;
+using System.Buffers.Binary;
 
 namespace OptionalNetworking.Managers
 {
@@ -9,32 +11,30 @@ namespace OptionalNetworking.Managers
 
         public static void Init()
         {
-            NetworkAPI.RegisterEvent<ModSetData>(ModSetEvent, ReceiveModSet);
+            NetworkAPI.RegisterFreeSizedEvent(ModSetEvent, ReceiveModSet);
         }
 
         internal static void OnAddPlayer(SNet_Player player)
         {
-            if (!player.IsBot)
-                NetworkAPI.InvokeEvent(ModSetEvent, new ModSetData(ModManager.LocalModMask), player, SNet_ChannelType.SessionOrderCritical);
+            if (player.IsBot || player.IsLocal) return;
+
+            byte[] dataArr = new byte[ModManager.ModHashes.Count * 8];
+            int count = 0;
+            foreach (var hash in ModManager.ModHashes)
+                BinaryPrimitives.WriteUInt64BigEndian(dataArr.AsSpan(count++ * 8, 8), hash);
+            NetworkAPI.InvokeFreeSizedEvent(ModSetEvent, dataArr, player, SNet_ChannelType.SessionOrderCritical);
         }
 
-        private static void ReceiveModSet(ulong lookup, ModSetData data)
+        private static void ReceiveModSet(ulong lookup, byte[] data)
         {
             if (!SNet.TryGetPlayer(lookup, out var player)) return;
 
-            ModManager.OnPlayerModSet(player, (data.Mask1, data.Mask2));
-        }
-
-        struct ModSetData
-        {
-            public long Mask1;
-            public long Mask2;
-
-            public ModSetData((long mask1, long mask2) maskPair)
-            {
-                Mask1 = maskPair.mask1;
-                Mask2 = maskPair.mask2;
-            }
+            ulong[] hashes = new ulong[data.Length / 8];
+            int count = 0;
+            for (int i = 0; i < data.Length; i += 8)
+                hashes[count++] = BinaryPrimitives.ReadUInt64BigEndian(data.AsSpan(i, 8));
+            
+            ModManager.OnPlayerModSet(player, ModManager.HashesToMask(hashes));
         }
     }
 }
