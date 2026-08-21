@@ -7,7 +7,7 @@ namespace OptionalNetworking
     public class PlayerInfo
     {
         /// <summary> Masks that store which mods the player has installed.</summary>
-        public (long mask1, long mask2) ModMask { get; internal set; } = (0, 1);
+        public (long mask1, long mask2) ModMask { get; private set; } = (0, 1);
         /// <summary> Cached SNet_Player lookup.</summary>
         public ulong Lookup { get; }
         /// <summary> The SNet_Player this class wraps.</summary>
@@ -40,6 +40,14 @@ namespace OptionalNetworking
                 return (ModMask.mask1 & modMask) != 0;
             else
                 return (ModMask.mask2 & modMask) != 1;
+        }
+
+        internal bool SetModMask((long mask1, long mask2) maskPair)
+        {
+            if (maskPair.mask1 == ModMask.mask1 && maskPair.mask2 == ModMask.mask2)
+                return false;
+            ModMask = maskPair;
+            return true;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using OptionalNetworking.Managers;
+using OptionalNetworking.Networking;
 using Player;
 using SNetwork;
 
@@ -14,7 +15,7 @@ namespace OptionalNetworking.Patches
         private static void Post_AddPlayer(SNet_Player player)
         {
             ModManager.OnAddPlayer(player);
-            ModSetNetworkManager.OnAddPlayer(player);
+            ModHandshakeHandler.OnAddPlayer(player);
         }
 
         [HarmonyPatch(typeof(SNet_SessionHub), nameof(SNet_SessionHub.OnLeftLobby))]
@@ -22,6 +23,7 @@ namespace OptionalNetworking.Patches
         [HarmonyPostfix]
         private static void Post_RemovePlayer(SNet_Player player)
         {
+            ModHandshakeHandler.OnRemovePlayer(player);
             ModManager.OnRemovePlayer(player);
         }
 

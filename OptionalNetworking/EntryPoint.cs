@@ -1,11 +1,11 @@
 ﻿using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
-using OptionalNetworking.Managers;
+using OptionalNetworking.Networking;
 
 namespace OptionalNetworking
 {
-    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.1.0")]
+    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.2.0")]
     [BepInDependency("dev.gtfomodding.gtfo-api", BepInDependency.DependencyFlags.HardDependency)]
     internal sealed class EntryPoint : BasePlugin
     {
@@ -13,7 +13,8 @@ namespace OptionalNetworking
 
         public override void Load()
         {
-            ModSetNetworkManager.Init();
+            ModHandshakeHandler.Init();
+            ModNetworkManager.Init();
             new Harmony(MODNAME).PatchAll();
             Log.LogMessage("Loaded " + MODNAME);
         }

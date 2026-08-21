@@ -6,5 +6,4 @@
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	<AssemblyName>OptionalNetworkAPI</AssemblyName>
   </PropertyGroup>
-
 </Project>

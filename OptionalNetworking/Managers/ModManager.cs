@@ -134,7 +134,8 @@ namespace OptionalNetworking.Managers
                 info = _players[player.Lookup];
             }
 
-            info.ModMask = modMask;
+            if (!info.SetModMask(modMask)) return;
+
             foreach (var mod in _modInfos.Values)
                 mod.InvokePlayerModSet(info);
         }
