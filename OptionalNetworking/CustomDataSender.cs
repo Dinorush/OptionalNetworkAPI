@@ -50,7 +50,8 @@ namespace OptionalNetworking
         }
 
         private const string EventPrefix = $"OptionalData";
-        private static readonly byte[] s_packetBuffer = new byte[Marshal.SizeOf<SNetStructs.pPlayer>() + Marshal.SizeOf<T>()];
+        private static unsafe readonly byte[] s_packetBuffer = new byte[sizeof(CustomPacket)];
+
         private readonly ModInfo _parent;
         private readonly string _eventName;
         private readonly Func<SNet_Player, T>? _defaultProvider;

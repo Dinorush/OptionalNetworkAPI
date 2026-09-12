@@ -57,6 +57,7 @@ namespace OptionalNetworking.Patches
         [HarmonyPostfix]
         private static void Post_LeaveHub()
         {
+            ModHandshakeHandler.OnLobbyLeft();
             ModManager.OnLobbyLeft();
         }
     }
