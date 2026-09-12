@@ -14,17 +14,19 @@ namespace OptionalNetworking
         void OnLobbyLeft();
     }
 
-    /// <summary> Determines who data is sent to.</summary>
+    /// <summary> Determines rules used when sending data to unspecified targets and when sending default data. Data sent to a specific player ignores most rules.</summary>
     [Flags]
     public enum SenderMode
     {
-        /// <summary> Send to other players with the mod.</summary>
+        /// <summary> Sends data to other players.</summary>
         OtherPlayers = 1,
-        /// <summary> Sends bot info to all players with the mod.</summary>
+        /// <summary> Sends default bot data to other players (if host).</summary>
         Bots = 1 << 2,
-        /// <summary> Sends the local player's info to themselves.</summary>
+        /// <summary> Data sent is received locally. Receives local default data, as well as Bots if set (and host).</summary>
         Self = 1 << 3,
-        /// <summary> Sends and receives local and bot data to all players with the mod.</summary>
+        /// <summary> Data sent to a specific, remote player is received locally.</summary>
+        TargetSelf = 1 << 4,
+        /// <summary> Sends and receives local and bot data to all players.</summary>
         All = OtherPlayers | Bots | Self
     }
 
@@ -104,38 +106,43 @@ namespace OptionalNetworking
 
         /// <summary>
         /// Sends the given data as the local player's data to the target player.
-        /// If null, sends it to all players.
+        /// Behavior depends on the target:
+        /// <list type="bullet">
+        /// <item>Null: Sends the data according to the SenderMode rules.</item>
+        /// <item>Local: Receives the data locally.</item>
+        /// <item>Remote: Sends the data to the target player.</item>
+        /// <item>Bot: Sends the data to the host.</item>
+        /// </list>
         /// </summary>
         public void SendData(T data, SNet_Player? target = null, SNet_ChannelType channelType = SNet_ChannelType.SessionOrderCritical) => SendData(SNet.LocalPlayer, data, target, channelType);
+
         /// <summary>
         /// Sends the given data as the given player's data to the target player.
-        /// If null, sends it to all players.
+        /// Behavior depends on the target:
+        /// <list type="bullet">
+        /// <item>Null: Sends the data according to the SenderMode rules.</item>
+        /// <item>Local: Receives the data locally.</item>
+        /// <item>Remote: Sends the data to the target player.</item>
+        /// <item>Bot: Sends the data to the host.</item>
+        /// </list>
         /// </summary>
         public void SendData(SNet_Player player, T data, SNet_Player? target = null, SNet_ChannelType channelType = SNet_ChannelType.SessionOrderCritical)
         {
-            if (!_mode.HasFlag(SenderMode.Bots) && player.IsBot) return;
-
             CustomPacket packet = new(player, data);
             if (target == null)
             {
-                if (_mode.HasFlag(SenderMode.Self) && player.IsLocal)
+                if (_mode.HasFlag(SenderMode.Self))
                     ReceiveEvent(player, packet.Data);
-                if (player.IsBot)
-                    ReceiveEvent(player, packet.Data);
+
                 if (_mode.HasFlag(SenderMode.OtherPlayers))
-                {
-                    if (!player.IsLocal && !player.IsBot)
-                        ReceiveEvent(player, packet.Data);
                     foreach (var remotePlayer in _parent.OtherPlayers)
                         NetworkAPI.InvokeFreeSizedEvent(_eventName, ConvertPacket(packet), remotePlayer, channelType);
-                }
                 return;
             }
 
             if (target.IsLocal)
             {
-                if (_mode.HasFlag(SenderMode.Self))
-                    ReceiveEvent(player, packet.Data);
+                ReceiveEvent(player, packet.Data);
                 return;
             }
 
@@ -148,6 +155,9 @@ namespace OptionalNetworking
                 }
                 target = SNet.Master;
             }
+
+            if (_mode.HasFlag(SenderMode.TargetSelf))
+                ReceiveEvent(player, packet.Data);
 
             if (ModManager.HasMod(target, _parent))
                 NetworkAPI.InvokeFreeSizedEvent(_eventName, ConvertPacket(packet), target, channelType);
