@@ -138,6 +138,9 @@ namespace OptionalNetworking.Managers
 
             foreach (var mod in _modInfos.Values)
                 mod.InvokePlayerModSet(info);
+
+            if (player.IsMaster)
+                UpdateMasterInfo(info);
         }
 
         internal static void OnLobbyLeft()
@@ -165,6 +168,11 @@ namespace OptionalNetworking.Managers
             else if (MasterInfo == info)
                 return;
 
+            UpdateMasterInfo(info);
+        }
+
+        private static void UpdateMasterInfo(PlayerInfo info)
+        {
             MasterInfo = info;
 
             foreach (var mod in _modInfos.Values)
