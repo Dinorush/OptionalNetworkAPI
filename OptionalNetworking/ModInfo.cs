@@ -111,6 +111,7 @@ namespace OptionalNetworking
         internal void InvokePlayerLeft(PlayerInfo info)
         {
             (info.IsBot ? _bots : _others).Remove(info.Lookup);
+            _players.Remove(info.Lookup);
             OnPlayerLeft?.Invoke(info.Owner);
             foreach (var sender in _customDataSenders)
                 sender.OnPlayerLeft(info.Owner);

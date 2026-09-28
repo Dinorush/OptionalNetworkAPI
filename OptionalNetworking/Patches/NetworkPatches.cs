@@ -60,5 +60,15 @@ namespace OptionalNetworking.Patches
             ModHandshakeHandler.OnLobbyLeft();
             ModManager.OnLobbyLeft();
         }
+
+        // This is the only location where LeaveHub does not get called, but LeaveLobby is ran.
+        [HarmonyPatch(typeof(SNet_Lobby_STEAM), nameof(SNet_Lobby_STEAM.KeepLobbyAliveAndConnected))]
+        [HarmonyWrapSafe]
+        [HarmonyPostfix]
+        private static void Post_LobbyAlive(bool __result)
+        {
+            if (!__result)
+                Post_LeaveHub();
+        }
     }
 }
